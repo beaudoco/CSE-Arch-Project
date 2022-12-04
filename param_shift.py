@@ -35,33 +35,33 @@ class QFCModel(QuantumModule):
         x = F.avg_pool2d(x, 6).view(bsz, 16)
 
         if use_qiskit:
-            print("In FWD")
+            # print("In FWD")
             x = self.qiskit_processor.process_parameterized(
                 self.q_device, self.encoder, self.q_layer, self.measure, x)
-            print("Done")
+            # print("Done")
         else:
-            print("Step 1: \n")
+            # print("Step 1: \n")
             self.encoder(self.q_device, x)
-            print("Step 2: \n")
+            # print("Step 2: \n")
             self.q_layer(self.q_device)
-            print("Step 3: \n")
+            # print("Step 3: \n")
             x = self.measure(self.q_device)
-            print("Step 4: \n")
+            # print("Step 4: \n")
 
         x = x.reshape(bsz, 4)
-        print("Step 5: \n")
+        # print("Step 5: \n")
 
         return x
 
 def grad_calc(param):
 #     with torch.no_grad():
     param[0].copy_(param[0] + np.pi * 0.5)
-    print("hello \n")
+    # print("hello \n")
     out1 = model(param[2], param[3])
-    print("hello 2\n")
+    # print("hello 2\n")
 #     with torch.no_grad():
     param[0].copy_(param[0] - np.pi)
-    print("hello \n")
+    # print("hello \n")
     out2 = model(param[2], param[3])
 #     with torch.no_grad():
     param[0].copy_(param[0] + np.pi * 0.5)
@@ -90,7 +90,7 @@ def shift_and_run(model, inputs, use_qiskit=False):
     #     proc.join()
     if __name__ == '__main__' and use_qiskit:
         print(use_qiskit)
-        pool=mp.Pool(processes=1)
+        pool=mp.Pool(processes=len(param_list))
         proclist = [ pool.apply_async(grad_calc, args) for args in param_list ]
         pool.close()
         for res in proclist:
