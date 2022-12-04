@@ -90,8 +90,9 @@ def shift_and_run(model, inputs, use_qiskit=False):
     #     proc.join()
     if __name__ == '__main__' and use_qiskit:
         print(use_qiskit)
-        pool=mp.Pool(processes=len(param_list))
-        proclist = [ pool.apply_async(grad_calc, args) for args in param_list ]
+        # pool=mp.Pool(processes=len(param_list))
+        with mp.Pool(processes=len(param_list)) as pool:
+            proclist = [ pool.apply_async(grad_calc, args) for args in param_list ]
         pool.close()
         for res in proclist:
             print(res)
