@@ -1,3 +1,4 @@
+from cgitb import handler
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
@@ -73,6 +74,9 @@ def grad_calc(param):
     # np.save("gradients/grad-{0}.npy".format(param[1]), asarray(flatten))
     # grad_list.append(grad)
 
+def handler(result):
+    print("Returned")
+
 def shift_and_run(model, inputs, use_qiskit=False):
     param_list = []
     count = 0
@@ -85,14 +89,14 @@ def shift_and_run(model, inputs, use_qiskit=False):
     #     proc = mp.Process(target=grad_calc, args=(param, use_qiskit))
     #     procs.append(proc)
     #     proc.start()
-        
+       
     # for proc in procs:
     #     proc.join()
     if __name__ == '__main__' and use_qiskit:
         print(use_qiskit)
         # pool=mp.Pool(processes=len(param_list))
         with mp.Pool(processes=len(param_list)) as pool:
-            proclist = [ pool.apply_async(grad_calc, args) for args in param_list ]
+            proclist = [ pool.apply_async(grad_calc, args, callback=handler) for args in param_list ]
         pool.close()
         for res in proclist:
             print(res)
