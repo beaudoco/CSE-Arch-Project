@@ -58,7 +58,7 @@ def grad_calc(param):
     param[0].copy_(param[0] + np.pi * 0.5)
     print("hello \n")
     out1 = model(param[2], param[3])
-    print("hello \n")
+    print("hello 2\n")
 #     with torch.no_grad():
     param[0].copy_(param[0] - np.pi)
     print("hello \n")
@@ -93,7 +93,7 @@ def shift_and_run(model, inputs, use_qiskit=False):
 #         pool = multiprocessing.Pool(int(multiprocessing.cpu_count() / 2) )
         pool = mp.Pool(1)
         pool.map(grad_calc, (param_list))
-        pool.close()
+        # pool.close()
 
 
     folder_path = '/gradients'
