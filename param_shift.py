@@ -69,6 +69,7 @@ def grad_calc(param):
     file = open("gradients/grad-{0}.txt".format(param[1]), 'w')
     file.write(grad)
     file.close()
+    return
     # np.save("gradients/grad-{0}.npy".format(param[1]), asarray(flatten))
     # grad_list.append(grad)
 
@@ -89,11 +90,17 @@ def shift_and_run(model, inputs, use_qiskit=False):
     #     proc.join()
     if __name__ == '__main__' and use_qiskit:
         print(use_qiskit)
-        pool = mp.Pool()            
-#         pool = multiprocessing.Pool(int(multiprocessing.cpu_count() / 2) )
-        pool = mp.Pool(1)
-        pool.map(grad_calc, (param_list))
-        # pool.close()
+        pool=mp.Pool(processes=1)
+        proclist = [ pool.apply_async(grad_calc, args) for args in param_list ]
+        pool.close()
+        for res in proclist:
+            print(res)
+#         print(use_qiskit)
+#         pool = mp.Pool()            
+# #         pool = multiprocessing.Pool(int(multiprocessing.cpu_count() / 2) )
+#         pool = mp.Pool(1)
+#         pool.map(grad_calc, (param_list))
+#         pool.close()
 
 
     folder_path = '/gradients'
