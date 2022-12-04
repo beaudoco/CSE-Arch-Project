@@ -92,7 +92,7 @@ def shift_and_run(model, inputs, use_qiskit=False):
         pool = mp.Pool()            
 #         pool = multiprocessing.Pool(int(multiprocessing.cpu_count() / 2) )
         pool = mp.Pool(1)
-        pool.map(grad_calc, (param_list, use_qiskit))
+        pool.map(grad_calc, args=(param_list, use_qiskit))
         pool.close()
 
 
