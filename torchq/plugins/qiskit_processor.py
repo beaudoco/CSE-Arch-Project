@@ -288,7 +288,7 @@ class QiskitProcessor(object):
 
             p = multiprocessing.Pool(self.max_jobs)
             results = p.map(run_job_worker, feed_dicts)
-            p.close()
+            # p.close()
 
             if all(isinstance(result, dict) for result in results):
                 counts = results
@@ -439,7 +439,7 @@ class QiskitProcessor(object):
 
             p = multiprocessing.Pool(self.max_jobs)
             results = p.map(run_job_worker, feed_dicts)
-            p.close()
+            # p.close()
 
             if all(isinstance(result, dict) for result in results):
                 counts = results
@@ -546,7 +546,7 @@ class QiskitProcessor(object):
 
         p = multiprocessing.Pool(self.max_jobs)
         results = p.map(run_job_worker, feed_dicts)
-        p.close()
+        # p.close()
 
         if all(isinstance(result, dict) for result in results):
             counts = results
@@ -632,7 +632,7 @@ class QiskitProcessor(object):
 
             p = multiprocessing.Pool(self.max_jobs)
             results = p.map(run_job_worker, feed_dicts)
-            p.close()
+            # p.close()
 
             if all(isinstance(result, dict) for result in results):
                 counts = results
