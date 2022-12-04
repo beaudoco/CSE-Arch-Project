@@ -71,12 +71,13 @@ def shift_and_run(model, inputs, use_qiskit=False):
         param_list.append((param, count, inputs))
         count += 1
     grad_list = []
-    if __name__ == '__main__':
-        # pool = multiprocessing.Pool()
+    if __name__ == '__main__' and use_qiskit:
+        print("True")
+        pool = multiprocessing.Pool()
         # # pool = multiprocessing.Pool(multiprocessing.cpu_count())
-        # pool = multiprocessing.Pool(1)
+        pool = multiprocessing.Pool(1)
         pool.map(grad_calc, param_list)
-        # pool.close()
+        pool.close()
 
     # for param in param_list:
     #     grad_calc(param)
@@ -186,11 +187,11 @@ if __name__ == '__main__':
     for epoch in range(1, n_epochs + 1):
         # train
         print(f"Epoch {epoch}:")
-        pool = multiprocessing.Pool()
+        # pool = multiprocessing.Pool()
         # # pool = multiprocessing.Pool(multiprocessing.cpu_count())
-        pool = multiprocessing.Pool(1)
+        # pool = multiprocessing.Pool(1)
         train_and_return_grad(dataflow, model, device, optimizer)
-        pool.close()
+        # pool.close()
         print(optimizer.param_groups[0]['lr'])
         # valid
         valid_test(dataflow, 'valid', model, device)
