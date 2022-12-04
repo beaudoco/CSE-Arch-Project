@@ -11,11 +11,11 @@ from torchq.measurement import MeasureAll
 from torchq.operators import PauliZ
 from torchq.plugins.qiskit_processor import QiskitProcessor
 from torch.optim.lr_scheduler import CosineAnnealingLR
-import multiprocessing
+import torch.multiprocessing as mp
 import os,glob
 from qiskit import IBMQ
 
-IBMQ.save_account('51a2a5d55d3e1d9683ab4f135fe6fbb84ecf3221765e19adb408699d43c6eaa238265059c3c2955ba59328634ffbd88ba14d5386c947d22eb9a826e40811d626', overwrite=True)
+IBMQ.save_account('67313723797a8e1e5905db1cd035fe6918ea028b47a6ab963058182756fbfc7f6b72e92b21c668900e83e60d206de10aec97751d91ef74de7fde33f31e4b4e58', overwrite=True)
 
 class QFCModel(QuantumModule):
     def __init__(self):
@@ -35,23 +35,35 @@ class QFCModel(QuantumModule):
         x = F.avg_pool2d(x, 6).view(bsz, 16)
 
         if use_qiskit:
+            print("In FWD")
             x = self.qiskit_processor.process_parameterized(
                 self.q_device, self.encoder, self.q_layer, self.measure, x)
+            print("Done")
         else:
+            print("Step 1: \n")
             self.encoder(self.q_device, x)
+            print("Step 2: \n")
             self.q_layer(self.q_device)
+            print("Step 3: \n")
             x = self.measure(self.q_device)
+            print("Step 4: \n")
 
         x = x.reshape(bsz, 4)
+        print("Step 5: \n")
 
         return x
 
-def grad_calc(param):
-    # print("hello \n")
+def grad_calc(param, use_qiskit):
+#     with torch.no_grad():
     param[0].copy_(param[0] + np.pi * 0.5)
-    out1 = model(param[2], True)
+    print("hello \n")
+    out1 = model(param[2], use_qiskit)
+    print("hello \n")
+#     with torch.no_grad():
     param[0].copy_(param[0] - np.pi)
-    out2 = model(param[2], True)
+    print("hello \n")
+    out2 = model(param[2], use_qiskit)
+#     with torch.no_grad():
     param[0].copy_(param[0] + np.pi * 0.5)
     grad = 0.5 * (out1 - out2)
     file = open("gradients/grad-{0}.txt".format(param[1]), 'w')
@@ -60,10 +72,6 @@ def grad_calc(param):
     # np.save("gradients/grad-{0}.npy".format(param[1]), asarray(flatten))
     # grad_list.append(grad)
 
-def tmp_prog(x):
-    print("hello")
-    return 4
-
 def shift_and_run(model, inputs, use_qiskit=False):
     param_list = []
     count = 0
@@ -71,16 +79,21 @@ def shift_and_run(model, inputs, use_qiskit=False):
         param_list.append((param, count, inputs))
         count += 1
     grad_list = []
+    procs = []
+    for param in param_list:
+        proc = mp.Process(target=grad_calc, args=(param, use_qiskit))
+        procs.append(proc)
+        proc.start()
+        
+    for proc in procs:
+        proc.join()
     if __name__ == '__main__' and use_qiskit:
-        print("True")
-        pool = multiprocessing.Pool()
-        # # pool = multiprocessing.Pool(multiprocessing.cpu_count())
-        pool = multiprocessing.Pool(1)
-        pool.map(grad_calc, param_list)
+        print(use_qiskit)
+        pool = mp.Pool()            
+#         pool = multiprocessing.Pool(int(multiprocessing.cpu_count() / 2) )
+        pool = mp.Pool(1)
+        pool.map(grad_calc, (param_list, ))
         pool.close()
-
-    # for param in param_list:
-    #     grad_calc(param)
 
 
     folder_path = '/gradients'
@@ -95,10 +108,10 @@ use_cuda = torch.cuda.is_available()
 # device = torch.device("cuda" if use_cuda else "cpu")
 device = torch.device("cpu")
 model = QFCModel().to(device)
-
-# model = Q2Model().to(device)
-processor_real_qc = QiskitProcessor(use_real_qc=True, backend_name='ibmq_quito')
+processor_real_qc = QiskitProcessor(use_real_qc=True, backend_name='ibmq_manila')
 model.set_qiskit_processor(processor_real_qc)
+
+# model.share_memory()
 
 n_epochs = 15
 optimizer = optim.Adam(model.parameters(), lr=5e-3, weight_decay=1e-4)
@@ -184,27 +197,15 @@ def valid_test(dataflow, split, model, device, qiskit=False):
     print(f"{split} set accuracy: {accuracy}")
     print(f"{split} set loss: {loss}")
 
-if __name__ == '__main__':
-    for epoch in range(1, n_epochs + 1):
-        # train
-        print(f"Epoch {epoch}:")
-        # pool = multiprocessing.Pool()
-        # # pool = multiprocessing.Pool(multiprocessing.cpu_count())
-        # pool = multiprocessing.Pool(1)
-        train_and_return_grad(dataflow, model, device, optimizer)
-        # pool.close()
-        print(optimizer.param_groups[0]['lr'])
-        # valid
-        valid_test(dataflow, 'valid', model, device)
-        scheduler.step()
+# if __name__ == '__main__':
+for epoch in range(1, n_epochs + 1):
+    # train
+    print(f"Epoch {epoch}:")
+    train_and_return_grad(dataflow, model, device, optimizer)
+    print(optimizer.param_groups[0]['lr'])
+    # valid
+    valid_test(dataflow, 'valid', model, device)
+    scheduler.step()
 
 # test
 valid_test(dataflow, 'test', model, device, qiskit=False)
-
-# if __name__ == '__main__':
-#     pool = multiprocessing.Pool()
-#         # pool = multiprocessing.Pool(multiprocessing.cpu_count())
-#     pool = multiprocessing.Pool(1)
-#     listnames = [1,2,3,4,5,6]
-#     pool.map(tmp_prog, listnames)
-#     pool.close()
