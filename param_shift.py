@@ -79,20 +79,20 @@ def shift_and_run(model, inputs, use_qiskit=False):
         param_list.append((param, count, inputs))
         count += 1
     grad_list = []
-    procs = []
-    for param in param_list:
-        proc = mp.Process(target=grad_calc, args=(param, use_qiskit))
-        procs.append(proc)
-        proc.start()
+    # procs = []
+    # for param in param_list:
+    #     proc = mp.Process(target=grad_calc, args=(param, use_qiskit))
+    #     procs.append(proc)
+    #     proc.start()
         
-    for proc in procs:
-        proc.join()
+    # for proc in procs:
+    #     proc.join()
     if __name__ == '__main__' and use_qiskit:
         print(use_qiskit)
         pool = mp.Pool()            
 #         pool = multiprocessing.Pool(int(multiprocessing.cpu_count() / 2) )
         pool = mp.Pool(1)
-        pool.map(grad_calc, (param_list, ))
+        pool.map(grad_calc, (param_list, use_qiskit))
         pool.close()
 
 
