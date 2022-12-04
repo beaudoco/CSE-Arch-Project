@@ -53,16 +53,16 @@ class QFCModel(QuantumModule):
 
         return x
 
-def grad_calc(param, use_qiskit):
+def grad_calc(param):
 #     with torch.no_grad():
     param[0].copy_(param[0] + np.pi * 0.5)
     print("hello \n")
-    out1 = model(param[2], use_qiskit)
+    out1 = model(param[2], param[3])
     print("hello \n")
 #     with torch.no_grad():
     param[0].copy_(param[0] - np.pi)
     print("hello \n")
-    out2 = model(param[2], use_qiskit)
+    out2 = model(param[2], param[3])
 #     with torch.no_grad():
     param[0].copy_(param[0] + np.pi * 0.5)
     grad = 0.5 * (out1 - out2)
@@ -76,7 +76,7 @@ def shift_and_run(model, inputs, use_qiskit=False):
     param_list = []
     count = 0
     for param in model.parameters():
-        param_list.append((param, count, inputs))
+        param_list.append((param, count, inputs, use_qiskit))
         count += 1
     grad_list = []
     # procs = []
@@ -92,7 +92,7 @@ def shift_and_run(model, inputs, use_qiskit=False):
         pool = mp.Pool()            
 #         pool = multiprocessing.Pool(int(multiprocessing.cpu_count() / 2) )
         pool = mp.Pool(1)
-        pool.map(grad_calc, ([param_list, use_qiskit]))
+        pool.map(grad_calc, (param_list))
         pool.close()
 
 
