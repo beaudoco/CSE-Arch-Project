@@ -3,7 +3,7 @@ import pathos.multiprocessing as multiprocessing
 import itertools
 
 from qiskit import Aer, execute, IBMQ, transpile, QuantumCircuit
-from qiskit.providers.aer.noise import NoiseModel
+from qiskit_aer.noise import NoiseModel
 from qiskit.tools.monitor import job_monitor
 from qiskit.exceptions import QiskitError
 from .qiskit_plugin import tq2qiskit, tq2qiskit_parameterized, \
@@ -240,7 +240,7 @@ class QiskitProcessor(object):
 
         return transpiled_circ, binds_all
 
-    def batch_transpiled_parameterized(self, q_device: QuantumDevice, transpiled_circs, binds_all):
+    def batch_transpiled_parameterized(self, q_device: QuantumDevice, x, transpiled_circs, binds_all):
         job = execute(experiments=transpiled_circs,
                       backend=self.backend,
                       pass_manager=self.empty_pass_manager,
@@ -254,7 +254,6 @@ class QiskitProcessor(object):
         all_measured = []
         result = job.result()
         for counts in result.get_counts():
-
             measured_qiskit = get_expectations_from_counts(
                 counts, n_wires=q_device.n_wires)
             measured_qiskit = torch.tensor(measured_qiskit, device=x.device)
