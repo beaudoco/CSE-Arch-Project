@@ -56,17 +56,17 @@ class QFCModel(QuantumModule):
         return x
 
 def grad_calc(param):
-#     with torch.no_grad():
-    param[0].copy_(param[0] + np.pi * 0.5)
+    with torch.no_grad():
+        param[0].copy_(param[0] + np.pi * 0.5)
     # print("hello \n")
     out1 = model(param[2], param[3])
     # print("hello 2\n")
-#     with torch.no_grad():
-    param[0].copy_(param[0] - np.pi)
+    with torch.no_grad():
+        param[0].copy_(param[0] - np.pi)
     # print("hello \n")
     out2 = model(param[2], param[3])
-#     with torch.no_grad():
-    param[0].copy_(param[0] + np.pi * 0.5)
+    with torch.no_grad():
+        param[0].copy_(param[0] + np.pi * 0.5)
     grad = 0.5 * (out1 - out2)
     # file = open("gradients/grad-{0}.txt".format(param[1]), 'w')
     # file.write(grad)
