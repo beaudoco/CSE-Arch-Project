@@ -92,21 +92,18 @@ def shift_and_run(model, inputs, use_qiskit=False):
        
     # for proc in procs:
     #     proc.join()
-    if __name__ == '__main__' and use_qiskit:
-        print(use_qiskit)
-        # pool=mp.Pool(processes=len(param_list))
-        with mp.Pool(processes=len(param_list)) as pool:
-            proclist = [ pool.apply_async(grad_calc, args, callback=handler) for args in param_list ]
-        pool.close()
-        for res in proclist:
-            print(res)
-            grad_list.append(res)
-#         print(use_qiskit)
-#         pool = mp.Pool()            
-# #         pool = multiprocessing.Pool(int(multiprocessing.cpu_count() / 2) )
-#         pool = mp.Pool(1)
-#         pool.map(grad_calc, (param_list))
-#         pool.close()
+
+    for param in param_list:
+        grad_list.append(grad_calc(param))
+    # if __name__ == '__main__' and use_qiskit:
+    #     print(use_qiskit)
+    #     # pool=mp.Pool(processes=len(param_list))
+    #     with mp.Pool(processes=len(param_list)) as pool:
+    #         proclist = [ pool.apply_async(grad_calc, args, callback=handler) for args in param_list ]
+    #     pool.close()
+    #     for res in proclist:
+    #         print(res)
+    #         grad_list.append(res)
 
     return model(inputs, use_qiskit), grad_list
 
