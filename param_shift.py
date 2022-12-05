@@ -10,7 +10,7 @@ from torchq.devices import QuantumDevice
 from torchq.datasets.mnist import MNIST
 from torchq.measurement import MeasureAll
 from torchq.operators import PauliZ
-from torchq.plugins.qiskit_processor import QiskitProcessor
+from torchq.plugins.qiskit_processor_non_threaded import QiskitProcessor
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.multiprocessing as mp
 import os,glob
