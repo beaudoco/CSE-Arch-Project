@@ -10,7 +10,7 @@ from torchq.devices import QuantumDevice
 from torchq.datasets.mnist import MNIST
 from torchq.measurement import MeasureAll
 from torchq.operators import PauliZ
-from torchq.plugins.qiskit_processor_non_threaded import QiskitProcessor
+from torchq.plugins.qiskit_processor import QiskitProcessor
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.multiprocessing as mp
 import os,glob
@@ -97,7 +97,7 @@ def shift_and_run(model, inputs, use_qiskit=False):
     # for param in param_list:
     #     grad_list.append(grad_calc(param))
 
-    results = Parallel(n_jobs=2)(delayed(grad_calc)(param) for param in param_list)
+    results = Parallel(n_jobs=int(mp.cpu_count() / 2))(delayed(grad_calc)(param) for param in param_list)
 
     for res in results:
         grad_list.append(res)
