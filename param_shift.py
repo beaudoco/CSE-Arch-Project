@@ -75,7 +75,7 @@ def grad_calc(param):
     # grad_list.append(grad)
 
 def handler(result):
-    print("Returned")
+    print(result)
 
 def shift_and_run(model, inputs, use_qiskit=False):
     param_list = []
@@ -100,6 +100,7 @@ def shift_and_run(model, inputs, use_qiskit=False):
         pool.close()
         for res in proclist:
             print(res)
+            grad_list.append(res)
 #         print(use_qiskit)
 #         pool = mp.Pool()            
 # #         pool = multiprocessing.Pool(int(multiprocessing.cpu_count() / 2) )
@@ -107,13 +108,6 @@ def shift_and_run(model, inputs, use_qiskit=False):
 #         pool.map(grad_calc, (param_list))
 #         pool.close()
 
-
-    folder_path = '/gradients'
-    for filename in glob.glob(os.path.join(folder_path, '*.txt')):
-        with open(filename, 'r') as f:
-            text = f.read()
-            grad_list.append(text)
-            f.close()
     return model(inputs, use_qiskit), grad_list
 
 use_cuda = torch.cuda.is_available()
