@@ -287,6 +287,7 @@ class QiskitProcessor(object):
                 feed_dicts.append([feed_dict, qiskit_verbose])
 
             results = []
+            print("Yes \n")
             for dict in feed_dicts:
                 results.append(run_job_worker(dict))
             # p = multiprocessing.Pool(self.max_jobs)
@@ -441,6 +442,7 @@ class QiskitProcessor(object):
                 feed_dicts.append([feed_dict, qiskit_verbose])
 
             results = []
+            print("Yes \n")
             for dict in feed_dicts:
                 results.append(run_job_worker(dict))
             # p = multiprocessing.Pool(self.max_jobs)
@@ -551,6 +553,7 @@ class QiskitProcessor(object):
             feed_dicts.append([feed_dict, qiskit_verbose])
 
         results = []
+        print("Yes \n")
         for dict in feed_dicts:
             results.append(run_job_worker(dict))
         # p = multiprocessing.Pool(self.max_jobs)
