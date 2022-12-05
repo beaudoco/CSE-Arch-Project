@@ -141,12 +141,15 @@ def shift_and_run(model, inputs, use_qiskit=False):
 
     circ_all, bind_all = batch_circ(param_list)
     out_all = model.batch_execute(inputs, circ_all, bind_all, use_qiskit)
+    for i in range(len(out_all) - 1):
+        grad = 0.5*(out_all[i] - out_all[i+1])
+        grad_list.append(grad)
 
-    results = Parallel(n_jobs=5)(delayed(grad_calc)(param)
-                                 for param in param_list)
+    # results = Parallel(n_jobs=5)(delayed(grad_calc)(param)
+    #                              for param in param_list)
 
-    for res in results:
-        grad_list.append(res)
+    # for res in results:
+    #     grad_list.append(res)
 
     # if __name__ == '__main__' and use_qiskit:
     #     print(use_qiskit)
