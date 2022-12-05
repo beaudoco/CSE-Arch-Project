@@ -97,7 +97,7 @@ def shift_and_run(model, inputs, use_qiskit=False):
     # for param in param_list:
     #     grad_list.append(grad_calc(param))
 
-    results = Parallel(n_jobs=int(mp.cpu_count() / 2))(delayed(grad_calc)(param) for param in param_list)
+    results = Parallel(n_jobs=5)(delayed(grad_calc)(param) for param in param_list)
 
     for res in results:
         grad_list.append(res)
