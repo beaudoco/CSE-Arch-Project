@@ -67,10 +67,10 @@ def grad_calc(param):
 #     with torch.no_grad():
     param[0].copy_(param[0] + np.pi * 0.5)
     grad = 0.5 * (out1 - out2)
-    file = open("gradients/grad-{0}.txt".format(param[1]), 'w')
-    file.write(grad)
-    file.close()
-    return
+    # file = open("gradients/grad-{0}.txt".format(param[1]), 'w')
+    # file.write(grad)
+    # file.close()
+    return grad
     # np.save("gradients/grad-{0}.npy".format(param[1]), asarray(flatten))
     # grad_list.append(grad)
 
