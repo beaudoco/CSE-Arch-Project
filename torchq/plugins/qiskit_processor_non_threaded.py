@@ -294,7 +294,7 @@ class QiskitProcessor(object):
             results = p.map(run_job_worker, feed_dicts)
             p.close()
 
-            print(results)
+            # print(results)
 
             if all(isinstance(result, dict) for result in results):
                 counts = results
