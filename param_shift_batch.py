@@ -19,7 +19,8 @@ from qiskit import IBMQ
 from joblib import Parallel, delayed
 
 IBMQ.save_account(
-    '67313723797a8e1e5905db1cd035fe6918ea028b47a6ab963058182756fbfc7f6b72e92b21c668900e83e60d206de10aec97751d91ef74de7fde33f31e4b4e58', overwrite=True)
+    'b0ebd9d2f9e2475350fe3996cc65bf1381d1f3cf66baac95a7d91be4edd193b003623e2627ff84423043841bb8c7f8780e54a87572270d9076d93525a02cf49e', overwrite=True)
+
 
 class QFCModel(QuantumModule):
     def __init__(self):
@@ -40,27 +41,84 @@ class QFCModel(QuantumModule):
         x = F.avg_pool2d(x, 6).view(bsz, 16)
 
         if use_qiskit:
+            # print("In FWD")
             x = self.qiskit_processor.process_parameterized(
                 self.q_device, self.encoder, self.q_layer, self.measure, x)
+            # print("Done")
         else:
+            # print("Step 1: \n")
             self.encoder(self.q_device, x)
+            # print("Step 2: \n")
             self.q_layer(self.q_device)
+            # print("Step 3: \n")
             x = self.measure(self.q_device)
+            # print("Step 4: \n")
 
         x = x.reshape(bsz, 4)
+        # print("Step 5: \n")
         return x
+
+    def get_transpiled_circ(self, x, use_qiskit=False):
+        bsz = x.shape[0]
+        x = F.avg_pool2d(x, 6).view(bsz, 16)
+        circ, binds = self.qiskit_processor.preprocess_parameterized(
+            self.q_device, self.encoder, self.q_layer, self.measure, x)
+        return circ, binds
+
+    def batch_execute(self, x, circ_all, binds_all, use_qiskit=False):
+        bsz = x.shape[0]
+        all_out = []
+        data = self.qiskit_processor.batch_transpiled_parameterized(
+            self.q_device, x, circ_all, binds_all)
+        for x in data:
+            all_out.append(x.reshape(bsz, 4))
+        return all_out
+
 
 def grad_calc(param):
     with torch.no_grad():
         param[0].copy_(param[0] + np.pi * 0.5)
+    # print("hello \n")
     out1 = model(param[2], param[3])
+    # print("hello 2\n")
     with torch.no_grad():
         param[0].copy_(param[0] - np.pi)
+    # print("hello \n")
     out2 = model(param[2], param[3])
     with torch.no_grad():
         param[0].copy_(param[0] + np.pi * 0.5)
     grad = 0.5 * (out1 - out2)
+    # file = open("gradients/grad-{0}.txt".format(param[1]), 'w')
+    # file.write(grad)
+    # file.close()
     return grad
+    # np.save("gradients/grad-{0}.npy".format(param[1]), asarray(flatten))
+    # grad_list.append(grad)
+
+
+def handler(result):
+    print(result)
+
+
+def batch_circ(param_list):
+    circ_all = []
+    bind_all = []
+
+    for param in param_list:
+        with torch.no_grad():
+            param[0].copy_(param[0] + np.pi * 0.5)
+        circ, bind = model.get_transpiled_circ(param[2], param[3])
+        circ_all.append(circ)
+        bind_all.append(bind)
+        with torch.no_grad():
+            param[0].copy_(param[0] - np.pi)
+        circ, bind = model.get_transpiled_circ(param[2], param[3])
+        circ_all.append(circ)
+        bind_all.append(bind)
+        with torch.no_grad():
+            param[0].copy_(param[0] + np.pi * 0.5)
+    return circ_all, bind_all
+
 
 def shift_and_run(model, inputs, use_qiskit=False):
     param_list = []
@@ -69,25 +127,54 @@ def shift_and_run(model, inputs, use_qiskit=False):
         param_list.append((param, count, inputs, use_qiskit))
         count += 1
     grad_list = []
+    # procs = []
+    # for param in param_list:
+    #     proc = mp.Process(target=grad_calc, args=(param, use_qiskit))
+    #     procs.append(proc)
+    #     proc.start()
 
-    results = Parallel(n_jobs=5)(delayed(grad_calc)(param)
-                                 for param in param_list)
+    # for proc in procs:
+    #     proc.join()
 
-    for res in results:
-        grad_list.append(res)
+    # for param in param_list:
+    #     grad_list.append(grad_calc(param))
+
+    circ_all, bind_all = batch_circ(param_list)
+    out_all = model.batch_execute(inputs, circ_all, bind_all, use_qiskit)
+    for i in range(len(out_all) - 1):
+        grad = 0.5*(out_all[i] - out_all[i+1])
+        grad_list.append(grad)
+
+    # results = Parallel(n_jobs=5)(delayed(grad_calc)(param)
+    #                              for param in param_list)
+
+    # for res in results:
+    #     grad_list.append(res)
+
+    # if __name__ == '__main__' and use_qiskit:
+    #     print(use_qiskit)
+    #     # pool=mp.Pool(processes=len(param_list))
+    #     with mp.Pool(processes=len(param_list)) as pool:
+    #         proclist = [ pool.apply_async(grad_calc, args, callback=handler) for args in param_list ]
+    #     pool.close()
+    #     for res in proclist:
+    #         print(res)
+    #         grad_list.append(res)
 
     return model(inputs, use_qiskit), grad_list
 
 
 use_cuda = torch.cuda.is_available()
-device = torch.device("cuda" if use_cuda else "cpu")
-# device = torch.device("cpu")
+# device = torch.device("cuda" if use_cuda else "cpu")
+device = torch.device("cpu")
 model = QFCModel().to(device)
 processor_real_qc = QiskitProcessor(
     use_real_qc=True, backend_name='ibmq_manila')
 model.set_qiskit_processor(processor_real_qc)
 
-n_epochs = 2
+# model.share_memory()
+
+n_epochs = 15
 optimizer = optim.Adam(model.parameters(), lr=5e-3, weight_decay=1e-4)
 scheduler = CosineAnnealingLR(optimizer, T_max=n_epochs)
 
@@ -105,12 +192,11 @@ for split in dataset:
     dataflow[split] = torch.utils.data.DataLoader(
         dataset[split],
         batch_size=64,
-        sampler=sampler,
-        num_workers=8,
-        pin_memory=True)
+        sampler=sampler)
 
 grads_bp = []
 grads_ps = []
+
 
 def train_and_return_grad(dataflow, model, device, optimizer):
     for feed_dict in dataflow['train']:
@@ -173,7 +259,9 @@ def valid_test(dataflow, split, model, device, qiskit=False):
 
     print(f"{split} set accuracy: {accuracy}")
     print(f"{split} set loss: {loss}")
-    
+
+
+# if __name__ == '__main__':
 for epoch in range(1, n_epochs + 1):
     # train
     print(f"Epoch {epoch}:")
@@ -185,29 +273,3 @@ for epoch in range(1, n_epochs + 1):
 
 # test
 valid_test(dataflow, 'test', model, device, qiskit=False)
-
-# %matplotlib inline
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib
-
-grads_bp = np.array(grads_bp)
-grads_ps = np.array(grads_ps)
-
-n_steps = grads_bp.shape[0]
-n_params = grads_bp.shape[1]
-
-fig, ax_list = plt.subplots(n_params, 1, sharex=True, figsize=(15, 2 * n_params))
-
-for i, ax in enumerate(ax_list):
-  ax.plot(grads_bp[:, i], c="#1f77b4", label="back propagation")
-  ax.scatter(range(n_steps), grads_ps[:, i], c="#ff7f0e", marker="^", label="parameters shift")
-  ax.set_ylabel("grad of param{0}".format(i))
-  ax.set_xlabel("Step")
-  ax.legend()
-  ax.axhline(color='black', lw=0.5)
-
-plt.tight_layout()
-plt.savefig('foo.png')
-plt.savefig('foo.pdf')
-plt.show()
